@@ -288,6 +288,8 @@ public class Busqueda extends JFrame {
 					mostrarTablaHuespedes();
 					mostrarTablaReservas();
 					
+				}else {
+					JOptionPane.showMessageDialog(null, "Error fila no seleccionada, por favor realice una busqueda y seleccione una fila para editar");
 				}
 			}
 		});
@@ -425,63 +427,61 @@ public class Busqueda extends JFrame {
         	LocalDate dataE;
         	LocalDate dataS;
         	Object valorOriginal = modelo.getValueAt(tbReservas.getSelectedRow(), tbReservas.getSelectedColumn());
-        	try {
-        		DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        		
-        		String fechaEn = modelo.getValueAt(tbReservas.getSelectedRow(), 1).toString();
-                String fechaSa = modelo.getValueAt(tbReservas.getSelectedRow(), 2).toString();
-                String regex = "^(?:19|20)[0-9][0-9]-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$";
+        	
+            DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        	
+        	String fechaEn = modelo.getValueAt(tbReservas.getSelectedRow(), 1).toString();
+            String fechaSa = modelo.getValueAt(tbReservas.getSelectedRow(), 2).toString();
+            String regex = "^(?:19|20)[0-9][0-9]-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$";
                 
-                // Verificar si las fechas tienen el formato correcto
-                if (!fechaEn.matches(regex) || !fechaSa.matches(regex)) {
+            // Verificar si las fechas tienen el formato correcto
+            if (!fechaEn.matches(regex) || !fechaSa.matches(regex)) {
                        
                        JOptionPane.showMessageDialog(this, String.format("El formato de fecha no es válido (debe ser yyyy-MM-dd)."));
                        modelo.setValueAt(valorOriginal,tbReservas.getSelectedRow(), tbReservas.getSelectedColumn());
                        return;
-                }
-        		dataE = LocalDate.parse(modelo.getValueAt(tbReservas.getSelectedRow(), 1).toString(), dateFormat);
-            	dataS = LocalDate.parse(modelo.getValueAt(tbReservas.getSelectedRow(), 2).toString(), dateFormat);
-            	
-            	
-            
+            }
+            dataE = LocalDate.parse(modelo.getValueAt(tbReservas.getSelectedRow(), 1).toString(), dateFormat);
+            dataS = LocalDate.parse(modelo.getValueAt(tbReservas.getSelectedRow(), 2).toString(), dateFormat);
+
+        	String valor = calcularValorReserva(dataE, dataS);        	
+        	if(valor!=null) {
         		
-        	}catch(DateTimeException e){
-                
-        		throw new RuntimeException();
+    			String formaPago = (String) modelo.getValueAt(tbReservas.getSelectedRow(), 4);
+    			Integer id = Integer.valueOf(modelo.getValueAt(tbReservas.getSelectedRow(), 0).toString());
+    			if(tbReservas.getSelectedColumn()==0) {
+            		JOptionPane.showMessageDialog(this, String.format("No se pueden modificar los ID"));
+            	}else {
+            		this.reservaController.actualizarReservas(dataE, dataS, valor, formaPago, id);
+            		JOptionPane.showMessageDialog(this, String.format("Registro modificado con éxito"));
+            	}
         	}
-        	
-			String valor = calcularValorReserva(dataE, dataS);
-			String formaPago = (String) modelo.getValueAt(tbReservas.getSelectedRow(), 4);
-			Integer id = Integer.valueOf(modelo.getValueAt(tbReservas.getSelectedRow(), 0).toString());
-			
-			
-			
-        	if(tbReservas.getSelectedColumn()==0) {
-        		JOptionPane.showMessageDialog(this, String.format("No se pueden modificar los ID"));
-        	}else {
-        		this.reservaController.actualizarReservas(dataE, dataS, valor, formaPago, id);
-        		JOptionPane.showMessageDialog(this, String.format("Registro modificado con éxito"));
-        	}
-        	
         	
 		}, () -> JOptionPane.showMessageDialog(this, "Por favor, elije un registro"));
 		
 	}
 
 	private String calcularValorReserva(LocalDate dateE, LocalDate dateS) {
-		
-		if(dateE!=null && dateS !=  null) {
-			
-			int dias = (int) ChronoUnit.DAYS.between(dateE, dateS);
-			int noche = 50;
-			int valor = dias * noche;
-			return "$" + valor;
-
-		}else {
-			return "";
-		}
-
+	    if (dateE != null && dateS != null) {
+	        if (dateE.isAfter(dateS)) {
+	            // La fecha de entrada es posterior a la fecha de salida
+	        	JOptionPane.showMessageDialog(null,"la fecha de entrada no puede ser posterior  a la fecha de salida", 
+						"Error en fechas", JOptionPane.ERROR_MESSAGE);
+	        	
+				
+	        	return null;
+	        } else {
+	            int dias = (int) ChronoUnit.DAYS.between(dateE, dateS);
+	            int noche = 50;
+	            int valor = dias * noche;
+	            return "$" + valor;
+	        }
+	    } else {
+	        return "";
+	    }
 	}
+
+	
 	
 	
 	private void mostrarTablaHuespedes(){
@@ -539,33 +539,26 @@ public class Busqueda extends JFrame {
         	Integer id = Integer.valueOf(modeloHuesped.getValueAt(tbHuespedes.getSelectedRow(), 0).toString());
         	String nombre = (String) modeloHuesped.getValueAt(tbHuespedes.getSelectedRow(), 1);
         	String apellido = (String) modeloHuesped.getValueAt(tbHuespedes.getSelectedRow(), 2);
-        	try {
-        		DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        		
-        		String fechaN = modeloHuesped.getValueAt(tbHuespedes.getSelectedRow(), 1).toString();
-                String regex = "^(?:19|20)[0-9][0-9]-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$";
-                // Verificar si las fechas tienen el formato correcto
-                if (!fechaN.matches(regex)) {
-                	JOptionPane.showMessageDialog(this, String.format("El formato de fecha no es válido (debe ser yyyy-MM-dd)."));
-                    modelo.setValueAt(valorOriginal,tbReservas.getSelectedRow(), tbReservas.getSelectedColumn());
-                    return;
-                }
-              
-        		fechaNacimiento = LocalDate.parse(modeloHuesped.getValueAt(tbHuespedes.getSelectedRow(), 3).toString(), dateFormat);
-     		
-        	}catch(DateTimeException e){
-                
-        		throw new RuntimeException();
-        	}
         	
-			
+        	DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        		
+        	String fechaN = modeloHuesped.getValueAt(tbHuespedes.getSelectedRow(), 3).toString();
+        	String regex = "^(?:19|20)[0-9][0-9]-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$";
+            // Verificar si las fechas tienen el formato correcto
+            if (!fechaN.matches(regex)) {
+                	JOptionPane.showMessageDialog(this, String.format("El formato de fecha no es válido (debe ser yyyy-MM-dd)."));
+                    modeloHuesped.setValueAt(valorOriginal,tbHuespedes.getSelectedRow(), tbHuespedes.getSelectedColumn());
+                    return;
+             }
+              
+      		fechaNacimiento = LocalDate.parse(modeloHuesped.getValueAt(tbHuespedes.getSelectedRow(), 3).toString(), dateFormat);
         	String nacionalidad = (String) modeloHuesped.getValueAt(tbHuespedes.getSelectedRow(), 4);
         	String telefono= (String) modeloHuesped.getValueAt(tbHuespedes.getSelectedRow(), 5);
         	Integer idReserva = Integer.valueOf(modeloHuesped.getValueAt(tbHuespedes.getSelectedRow(), 6).toString());
 			
         	
 			
-        	if(tbReservas.getSelectedColumn()==0) {
+        	if(tbHuespedes.getSelectedColumn()==0) {
         		JOptionPane.showMessageDialog(this, String.format("No se pueden modificar los ID"));
         	}else {
         		this.huespedesController.actualizarH(id, nombre, apellido, fechaNacimiento, nacionalidad, telefono, idReserva);
